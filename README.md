@@ -3,9 +3,14 @@
 ### 1 Formatting of data ####
 
 IMPORTANT: Homologous chromosomes must have the same name and be on the same strand (script: reverse_complement.py).
-Required packages:
+Required python packages:
 
 
-### Inversion calling ####
+### 2 Inversion calling ####
 
-IMPORTANT: FASTA file names must have a unique prefix before the first '_' , as this is how the data is identified.
+Required bash installation:
+    minimap2
+    samtools
+    syri
+
+### 3 Telomere ####
