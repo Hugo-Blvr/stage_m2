@@ -1,2 +1,5 @@
-00_Data/fasta/*fasta
-00_Data/long_read/*bam
+00_Data/fasta/*.fasta
+00_Data/long_read/*.fastq.gz
+00_Data/TE_data/*.out
+00_Data/TE_data/*.tbl
+output/

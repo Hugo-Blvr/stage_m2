@@ -26,23 +26,24 @@ with open(fasta_path, 'r') as f:
                 motif = match.group(2)
                 copies = float(match.group(3))
                 
-                # Normaliser le motif (forme canonique)
-                canonical_motif = get_canonical_motif(motif)
-                
-                # Créer la clé (chromosome, motif canonique)
-                key = (chromosome, canonical_motif)
-                
-                # Si la clé n'existe pas encore, l'initialiser
-                if key not in data:
-                    data[key] = {'max_copies': copies}
-                else:
-                    # Mettre à jour max_copies et incrémenter le compteur
-                    data[key]['max_copies'] = max(data[key]['max_copies'], copies)
+                if len(motif) >= 5 and len(motif) <= 8:
+                    # Normaliser le motif (forme canonique)
+                    canonical_motif = get_canonical_motif(motif)
+                    
+                    # Créer la clé (chromosome, motif canonique)
+                    key = (chromosome, canonical_motif)
+                    
+                    # Si la clé n'existe pas encore, l'initialiser
+                    if key not in data:
+                        data[key] = {'max_copies': copies}
+                    else:
+                        # Mettre à jour max_copies et incrémenter le compteur
+                        data[key]['max_copies'] = max(data[key]['max_copies'], copies)
 
-                # Compter le nombre de chromosomes distincts pour chaque motif canonique
-                if canonical_motif not in motif_chromosome_count:
-                    motif_chromosome_count[canonical_motif] = set()
-                motif_chromosome_count[canonical_motif].add(chromosome)
+                    # Compter le nombre de chromosomes distincts pour chaque motif canonique
+                    if canonical_motif not in motif_chromosome_count:
+                        motif_chromosome_count[canonical_motif] = set()
+                    motif_chromosome_count[canonical_motif].add(chromosome)
 
 # Créer et écrire dans le fichier TSV
 with open(output_file, 'w') as out:

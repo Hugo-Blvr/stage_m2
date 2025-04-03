@@ -1,0 +1,33 @@
+[2025-04-03 14:02:08] Motif original: AGGGTT, Motif triplé: AGGGTTAGGGTTAGGGTT
+[2025-04-03 14:02:08] Création du dossier de sortie '02_Telomere/output/telomere/'
+[2025-04-03 14:02:08] Nombre de fichiers FASTA trouvés: 4
+[2025-04-03 14:02:08] Traitement de '00_Data/fasta/Gd_00293-aad_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:02:09] Traitement de '00_Data/fasta/Gd_00442-ba_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:02:10] Traitement de '00_Data/fasta/Gd_00708-ba_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:02:10] Traitement de '00_Data/fasta/Gd_03020-aa_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:02:11] Traitement terminé. 4 fichiers traités, 0 fichiers avec occurrences du motif.
+[2025-04-03 14:14:51] Motif original: AGGGTT, Motif triplé: AGGGTTAGGGTTAGGGTT
+[2025-04-03 14:14:51] Nombre de fichiers FASTA trouvés: 4
+[2025-04-03 14:14:51] Traitement de '00_Data/fasta/Gd_00293-aad_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:14:52] Traitement de '00_Data/fasta/Gd_00442-ba_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:14:52] Traitement de '00_Data/fasta/Gd_00708-ba_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:14:53] Traitement de '00_Data/fasta/Gd_03020-aa_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:14:54] Traitement terminé.
+[2025-04-03 14:16:20] Motif original: AGGGTT, Motif triplé: AGGGTTAGGGTTAGGGTT
+[2025-04-03 14:16:20] Nombre de fichiers FASTA trouvés: 4
+[2025-04-03 14:16:20] Traitement de '00_Data/fasta/Gd_00293-aad_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:16:20] Traitement de '00_Data/fasta/Gd_00442-ba_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:16:21] Traitement de '00_Data/fasta/Gd_00708-ba_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:16:22] Traitement de '00_Data/fasta/Gd_03020-aa_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:16:22] Traitement terminé.
+[2025-04-03 14:16:22] Lancement de la visualisation dans '02_Telomere/output/visu.html'
+[2025-04-03 14:16:22] Visualisaton terminé.
+[2025-04-03 14:17:59] Motif original: AGGGTT, Motif triplé: AGGGTTAGGGTTAGGGTT
+[2025-04-03 14:17:59] Nombre de fichiers FASTA trouvés: 4
+[2025-04-03 14:17:59] Traitement de '00_Data/fasta/Gd_00293-aad_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:18:00] Traitement de '00_Data/fasta/Gd_00442-ba_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:18:01] Traitement de '00_Data/fasta/Gd_00708-ba_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:18:01] Traitement de '00_Data/fasta/Gd_03020-aa_hypo_assembly_on293_sup50kb_on708_renamechr.fasta' avec motif 'AGGGTTAGGGTTAGGGTT'
+[2025-04-03 14:18:02] Traitement terminé.
+[2025-04-03 14:18:02] Lancement de la visualisation dans '02_Telomere/output/visu.html'
+[2025-04-03 14:18:04] Visualisaton terminé.

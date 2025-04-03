@@ -14,3 +14,4 @@ Required bash installation:
     syri
 
 ### 3 Telomere ####
+spécifique aux données Oxford Nanopore

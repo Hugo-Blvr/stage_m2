@@ -2,6 +2,7 @@ import pandas as pd
 import json
 import numpy as np
 import os
+import sys
 from pathlib import Path
 
 def parse_tsv_file(file_path):
@@ -257,7 +258,7 @@ def generate_multi_genome_html(genome_data):
     
     return html_content
 
-def main(input_directory, lineage, output_file):
+def main(input_directory,output_file):
     # Get all TSV files in the directory
     tsv_files = list(Path(input_directory).glob('*.tsv'))
     
@@ -266,8 +267,8 @@ def main(input_directory, lineage, output_file):
     for tsv_file in tsv_files:
         # Extract genome name from filename (assuming format: NAME_*.tsv)
         genome_name = tsv_file.name.split('_')[0]+'_'+tsv_file.name.split('_')[1]
-        if genome_name in lineage:
-            genome_data[genome_name] = parse_tsv_file(tsv_file)
+
+        genome_data[genome_name] = parse_tsv_file(tsv_file)
     
     # Generate HTML with all genome data
     html_content = generate_multi_genome_html(genome_data)
@@ -277,17 +278,13 @@ def main(input_directory, lineage, output_file):
         f.write(html_content)
 
 if __name__ == "__main__":
+    # Gestion des arguments en ligne de commande
+    if len(sys.argv) != 5:
+        print("Usage: python script.py --input_directory <dossier> --output_file <fichier_html>")
+        sys.exit(1)
 
-    pdestructans = ["Gd_00293","Gd_00442","Gd_00994","Gd_01111","Gd_01144","Gd_01882","Gd_02407",
-                    "Gd_03020","Gd_04985","Gd_00045","Gd_00614","Gd_00708","Gd_02185","Gd_04986"]
+    input_directory = sys.argv[2]  # Dossier d'entrée
+    output_file = sys.argv[4]  # Fichier de sortie HTML
 
-    outgroup = ["Gd_00200","Gd_00201","Gd_00202","Gd_00203","Gd_00206","Gd_00207","Gd_00208",
-                "Gd_00211","Gd_00212","Gd_00214","Gd_00215","Gd_00217","Gd_00227","Gd_00801",
-                "Gd_00852","Gd_00863","Gd_01057","Gd_00267"]
-
-    input_directory = "out_tidk"
-    output_file = "Pd_telo_visualization.html"
-    lineage = pdestructans
-
-    main(input_directory, lineage, output_file)
+    main(input_directory, output_file)
 
