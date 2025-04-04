@@ -1,4 +1,4 @@
 00_Data/fasta/*.fasta
 00_Data/long_read/*.fastq.gz
-00_Data/TE_data/*50kb*
+00_Data/TE_data/*.out
 output/

@@ -138,14 +138,13 @@ if [ -z "$GENOME" ] || [ -z "$LONGREADS" ]; then
 fi
 
 verifier_prerequis
+LOG_FILE="$OUTDIR/telomere_analysis.log"
+[ -f "$LOG_FILE" ] && rm "$LOG_FILE"
+
 verifier_fichier "$GENOME" "du génome"
 verifier_fichier "$LONGREADS" "des lectures longues"
 GENOME=$(realpath "$GENOME")
 LONGREADS=$(realpath "$LONGREADS")
-
-# Définition du fichier de log dans le dossier de sortie
-LOG_FILE="$OUTDIR/telomere_analysis.log"
-[ -f "$LOG_FILE" ] && rm "$LOG_FILE"
 
 # Création des répertoires de sortie
 creer_dossier "$OUTDIR"

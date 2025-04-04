@@ -139,15 +139,25 @@ if [ -z "$INDIR" ]; then
     exit 1
 fi
 
+if [[ "$OUTFILE" != *.tsv ]]; then
+    echo -e "${RED}Erreur: Le chemin $OUTFILE n'est pas un chemin de fichier .tsv valide.${NC}"
+    exit 1 
+fi
+
 verifier_prerequis
-verifier_dossier "$INDIR" "d'entrée"
-INDIR=$(realpath "$INDIR")
 
 OUTDIR=$(dirname "$OUTFILE")
 if [ "$OUTDIR" = "." ]; then
     OUTDIR=$(pwd)
 fi
 OUTDIR=$(realpath "$OUTDIR")
+
+LOG_FILE="$OUTDIR/inversions_calling.log"
+[ -f "$LOG_FILE" ] && rm "$LOG_FILE"
+
+verifier_dossier "$INDIR" "d'entrée"
+INDIR=$(realpath "$INDIR")
+
 creer_dossier "$OUTDIR"
 
 OUTFILE=$(realpath "$OUTFILE")
@@ -156,9 +166,6 @@ OUTFILE=$(realpath "$OUTFILE")
 TMP_DIR="$OUTDIR/tmp_dir_output"
 creer_dossier "$TMP_DIR"
 [ "$(ls -A "$TMP_DIR" 2>/dev/null)" ] && rm "$TMP_DIR"/*
-
-LOG_FILE="$OUTDIR/inversions_calling.log"
-[ -f "$LOG_FILE" ] && rm "$LOG_FILE"
 # ======================================================================================
 
 
@@ -317,7 +324,7 @@ for ((i=0; i<${#fasta_files[@]}; i++)); do
                         seen[pair] = 1;
                         tgt_size = tend - tstart;
                         qry_size = qend - qstart;
-                        print tgt_name, \$1, tstart, tend, tgt_size, sep, qry_name, \$6, qstart, qend, qry_size, \$9, \$10
+                        print tgt_name, \$1, tstart, tend, tgt_size, sep, qry_name, \$6, qstart, qend, qry_size
                     }
                 }' \"$syri_out\" >> \"$OUTFILE\""
                 if ! executer_commande "Extraction des inversions pour $chr" "$AWK_EXTRACT" true; then

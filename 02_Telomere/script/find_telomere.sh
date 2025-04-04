@@ -139,14 +139,15 @@ if [ -z "$INDIR" ] || [ -z "$MOTIF" ]; then
 fi
 
 verifier_prerequis
+LOG_FILE="$OUTDIR/telo_search.log"
+[ -f "$LOG_FILE" ] && rm "$LOG_FILE"
+
 verifier_dossier "$INDIR" "d'entrée"
 INDIR=$(realpath "$INDIR")
 
 OUTDIR=$(realpath "$OUTDIR")
 creer_dossier "$OUTDIR"
 
-LOG_FILE="$OUTDIR/telo_search.log"
-[ -f "$LOG_FILE" ] && rm "$LOG_FILE"
 MOTIF_TRIPLE="${MOTIF}${MOTIF}${MOTIF}"
 
 # Vérifie l'existence du script Python si la visualisation est demandée + vérifie l'extention de la visualisation
@@ -166,6 +167,13 @@ if [ -n "$VISU_FILE_NAME" ]; then
 
     if [[ "$VISU_FILE_NAME" != *.html ]]; then
         VISU_FILE_NAME="${VISU_FILE_NAME}.html"
+    fi
+
+    if ls "$OUTDIR"/*.tsv 1> /dev/null 2>&1; then
+        echo -e "${RED}ERREUR : Des fichiers .tsv existent dans $OUTDIR.${NC}"
+        journaliser "ERREUR : Des fichiers .tsv existent dans $OUTDIR."
+        echo "Veuillez les supprimer ou choisir un autre dossier pour ne pas compromettre la visualisation."
+        exit 1
     fi
 fi
 # ======================================================================================
