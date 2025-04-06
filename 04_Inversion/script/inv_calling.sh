@@ -11,90 +11,90 @@ BLUE='\033[0;34m'; NC='\033[0m'
 
 help() {
     echo -e "\n${BLUE}Usage:${NC} $0 -d <in_directory> -o <out_directory/file.tsv> [options]\n"
-    echo -e "${BLUE}Options obligatoires:${NC}"
-    echo "  -d, --directory <dossier>   Dossier contenant les fichiers FASTA à analyser"
-    echo -e "${BLUE}Options facultatives:${NC}"
-    echo "  -h, --help                  Affiche ce message d'aide"
-    echo "  -o, --output <paht_file>    Chemin du fichier de sortie des résultats (défaut: ./inv_calling.tsv)"
-    echo "  -i, --identity <float>     Identité de séquence minimale (0-1, défaut: 0)"
-    echo "  -t, --threads <int>      Nombre de threads à utiliser (défaut: 8)\n"    
-    echo -e "\n${YELLOW}IMPORTANT: ${NC}Les chromosomes homologues doivent avoir le même identifiant et être sur le même brin.\n"
+    echo -e "${BLUE}Required options:${NC}"
+    echo "  -d, --directory <folder>   Directory containing FASTA files to analyze"
+    echo -e "${BLUE}Optional options:${NC}"
+    echo "  -h, --help                  Display this help message"
+    echo "  -o, --output <path_file>    Path to the output file (default: ./inv_calling.tsv)"
+    echo "  -i, --identity <float>     Minimum sequence identity (0-1, default: 0)"
+    echo "  -t, --threads <int>      Number of threads to use (default: 8)"    
+    echo -e "\n${YELLOW}IMPORTANT: ${NC}Homologous chromosomes must have the same identifier and be on the same strand.\n"
     exit 0
 }
 
-verifier_prerequis() {
+check_prerequisites() {
     local missing_tools=()
     for tool in minimap2 samtools awk syri; do
         command -v "$tool" &>/dev/null || missing_tools+=("$tool")
     done
 
     if ((${#missing_tools[@]})); then
-        echo -e "\n${RED}Erreur: Les outils suivants ne sont pas installés ou ne sont pas dans le PATH:${NC}"
+        echo -e "\n${RED}Error: The following tools are not installed or not in PATH:${NC}"
         printf "${RED}  - %s\n${NC}" "${missing_tools[@]}"
-        echo -e "Veuillez installer ces outils avant d'exécuter ce script.\n"
+        echo -e "Please install these tools before running this script.\n"
         exit 1
     fi
 }
 
-verifier_dossier() {
-    local dossier="$1"
+check_directory() {
+    local directory="$1"
     local description="$2"
-    # Vérification de l'existence et de la lisibilité du dossier
-    if [ ! -d "$dossier" ] || [ ! -r "$dossier" ]; then
-        echo -e "${RED}Erreur: Le dossier $description '$dossier' n'existe pas ou n'est pas lisible.${NC}"
-        journaliser "ERREUR: Dossier '$dossier' introuvable ou non lisible"
+    # Check if directory exists and is readable
+    if [ ! -d "$directory" ] || [ ! -r "$directory" ]; then
+        echo -e "${RED}Error: The $description directory '$directory' does not exist or is not readable.${NC}"
+        log_entry "ERROR: Directory '$directory' not found or not readable"
         exit 1
     fi
 }
 
-creer_dossier() {
-    local dossier="$1"
-    # Si le dossier n'existe pas, tente de le créer
-    if [ ! -d "$dossier" ]; then
-        journaliser "Création du dossier '$dossier'"
-        mkdir -p "$dossier" || { 
-            echo -e "${RED}Erreur: Impossible de créer le dossier '$dossier'.${NC}"
-            journaliser "ERREUR: Création du dossier '$dossier' échouée"
+create_directory() {
+    local directory="$1"
+    # If directory doesn't exist, try to create it
+    if [ ! -d "$directory" ]; then
+        log_entry "Creating directory '$directory'"
+        mkdir -p "$directory" || { 
+            echo -e "${RED}Error: Unable to create directory '$directory'.${NC}"
+            log_entry "ERROR: Creation of directory '$directory' failed"
             exit 1
         }
     fi
-    # Vérifie que le dossier est accessible en écriture
-    if [ ! -w "$dossier" ]; then
-        echo -e "${RED}Erreur: Le dossier '$dossier' n'est pas accessible en écriture.${NC}"
-        journaliser "ERREUR: Dossier '$dossier' non accessible en écriture"
+    # Check if directory is writable
+    if [ ! -w "$directory" ]; then
+        echo -e "${RED}Error: Directory '$directory' is not writable.${NC}"
+        log_entry "ERROR: Directory '$directory' not writable"
         exit 1
     fi
 }
 
-journaliser() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
+log_entry() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
 
-executer_commande() {
+execute_command() {
     local description="$1"           
-    local commande="$2"              
-    local ignore_error="${3:-false}" # Un flag qui indique si les erreurs doivent être ignorées (par défaut "false")
+    local command="$2"              
+    local ignore_error="${3:-false}" # Flag indicating if errors should be ignored (default "false")
     
-    journaliser "EXÉCUTION: $description" 
+    log_entry "EXECUTION: $description" 
     
-    OUTPUT=$(eval "$commande" 2>&1) # Exécution de la commande dans un sous-shell et récupération de la sortie
-    local STATUS=$?  # Récupération du code de retour de la commande
+    OUTPUT=$(eval "$command" 2>&1) # Execute command in subshell and capture output
+    local STATUS=$?  # Get command return code
     
     if [ $STATUS -eq 0 ] || [ "$ignore_error" == "true" ]; then
-        return 0  # si la commande s'est exécutée avec succès ou si on ignore les erreurs
+        return 0  # if command executed successfully or if errors are ignored
     else
-        # Si une erreur s'est produite, afficher un message d'erreur et journaliser
-        echo -e "  ${RED}✗${NC} Erreur lors de $description"
-        journaliser "ERREUR: $description: $OUTPUT"
+        # If an error occurred, display error message and log it
+        echo -e "  ${RED}✗${NC} Error during $description"
+        log_entry "ERROR: $description: $OUTPUT"
         return 1
     fi
 }
 
-# Initialisation des variables par défaut
+# Initialize default variables
 OUTFILE="./inv_calling.tsv"
 MIN_IDENTITY=0
 THREADS=8
 INDIR=""
 
-# Traitement des options
+# Process options
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -h|--help)
@@ -111,7 +111,7 @@ while [[ "$#" -gt 0 ]]; do
         -i|--identity)
             MIN_IDENTITY="$2"
             if ! [[ "$MIN_IDENTITY" =~ ^[0-9]*\.?[0-9]+$ ]] || (( $(echo "$MIN_IDENTITY < 0 || $MIN_IDENTITY > 1" | bc -l) )); then
-                echo -e "${RED}Erreur: L'identité de séquence doit être un nombre entre 0 et 1.${NC}"
+                echo -e "${RED}Error: Sequence identity must be a number between 0 and 1.${NC}"
                 exit 1
             fi
             shift 2
@@ -119,32 +119,32 @@ while [[ "$#" -gt 0 ]]; do
         -t|--threads)
             THREADS="$2"
             if ! [[ "$THREADS" =~ ^[0-9]+$ ]]; then
-                echo -e "${RED}Erreur: Le nombre de threads doit être un entier positif.${NC}"
+                echo -e "${RED}Error: The number of threads must be a positive integer.${NC}"
                 exit 1
             fi
             shift 2
             ;;
         *)
-            echo -e "${RED}Erreur: Option inconnue '$1'${NC}"
-            echo "Utilisez '$0 --help' pour voir les options disponibles."
+            echo -e "${RED}Error: Unknown option '$1'${NC}"
+            echo "Use '$0 --help' to see available options."
             exit 1
             ;;
     esac
 done
 
-# =========== Validation des paramètre et préparation de l’environnement de sortie ========
+# =========== Parameter validation and output environment preparation ========
 if [ -z "$INDIR" ]; then
-    echo -e "${RED}Erreur: L'option -d/--directory est obligatoire.${NC}"
-    echo "Utilisez '$0 --help' pour plus d'informations."
+    echo -e "${RED}Error: The -d/--directory option is mandatory.${NC}"
+    echo "Use '$0 --help' for more information."
     exit 1
 fi
 
 if [[ "$OUTFILE" != *.tsv ]]; then
-    echo -e "${RED}Erreur: Le chemin $OUTFILE n'est pas un chemin de fichier .tsv valide.${NC}"
+    echo -e "${RED}Error: The path $OUTFILE is not a valid .tsv file path.${NC}"
     exit 1 
 fi
 
-verifier_prerequis
+check_prerequisites
 
 OUTDIR=$(dirname "$OUTFILE")
 if [ "$OUTDIR" = "." ]; then
@@ -155,43 +155,45 @@ OUTDIR=$(realpath "$OUTDIR")
 LOG_FILE="$OUTDIR/inversions_calling.log"
 [ -f "$LOG_FILE" ] && rm "$LOG_FILE"
 
-verifier_dossier "$INDIR" "d'entrée"
+check_directory "$INDIR" "input"
 INDIR=$(realpath "$INDIR")
 
-creer_dossier "$OUTDIR"
+create_directory "$OUTDIR"
 
 OUTFILE=$(realpath "$OUTFILE")
 [ -f "$OUTFILE" ] && rm "$OUTFILE"
 
 TMP_DIR="$OUTDIR/tmp_dir_output"
-creer_dossier "$TMP_DIR"
+create_directory "$TMP_DIR"
 [ "$(ls -A "$TMP_DIR" 2>/dev/null)" ] && rm "$TMP_DIR"/*
 # ======================================================================================
 
 
 
-# ===== Récupération et vérification de la liste des fichiers FASTA dans le dossier =====
+# ===== Retrieve and check the list of FASTA files in the directory =====
 fasta_files=($(find "$INDIR" -maxdepth 1 -type f -iname "*.fasta"))
 if [ ${#fasta_files[@]} -eq 0 ]; then
-    echo -e "${RED}Erreur: Aucun fichier .fasta trouvé dans le dossier $INDIR.${NC}"
-    journaliser "ERREUR: Aucun fichier .fasta trouvé dans le dossier $INDIR"
+    echo -e "${RED}Error: No .fasta files found in directory $INDIR.${NC}"
+    log_entry "ERROR: No .fasta files found in directory $INDIR"
     exit 1
 fi
 # ======================================================================================
 
-# Affiche un résumé des paramètres
-echo -e "${BLUE}====== Paramètres de l'analyse ======${NC}"
-echo -e "Dossier d'entrée:            ${GREEN}$INDIR${NC}"
-echo -e "Fichier de sortie:           ${GREEN}$OUTFILE${NC}"
-echo -e "Identité de séquence minimale:           ${GREEN}$MIN_IDENTITY${NC}"
-echo -e "Threads:                     ${GREEN}$THREADS${NC}"
-echo -e "Fichiers FASTA:              ${GREEN}${#fasta_files[@]}${NC}\n"
+# Display parameter summary
+echo -e "${BLUE}====== Parameters ======${NC}"
+echo -e "Input directory:            ${GREEN}$INDIR${NC}"
+echo -e "Output file:                ${GREEN}$OUTFILE${NC}"
+echo -e "Minimum sequence identity:  ${GREEN}$MIN_IDENTITY${NC}"
+echo -e "Threads:                    ${GREEN}$THREADS${NC}"
+echo -e "FASTA files:                ${GREEN}${#fasta_files[@]}${NC}\n"
 
-# Calcul du nombre total de comparaisons
+# Calculate total number of comparisons
 total_comparisons=$(( ${#fasta_files[@]} * (${#fasta_files[@]} - 1) ))
 current_comparison=0
 
-# Boucle principale pour comparer toutes les paires de génomes
+echo -e "target\tt_chr\tt_start\tt_end\tquery\tq_chr\tq_start\tq_end" >> $OUTFILE
+
+# Main loop to compare all genome pairs
 for ((i=0; i<${#fasta_files[@]}; i++)); do
     for ((j=0; j<${#fasta_files[@]}; j++)); do
         if [[ $i -ne $j ]]; then 
@@ -201,45 +203,45 @@ for ((i=0; i<${#fasta_files[@]}; i++)); do
             target_name=$(basename "${target_file}" | cut -d. -f1)
             query_name=$(basename "${query_file}" | cut -d. -f1)
             
-            # Calcul et affichage du pourcentage de progression
+            # Calculate and display progress percentage
             percent=$((current_comparison * 100 / total_comparisons))
-            echo -e "\n${BLUE}[$percent%] Analyse:${NC} ${GREEN}$target_name${NC} - ${GREEN}$query_name${NC}"
-            journaliser "\n\t======= Analyse de la paire: $target_name - $query_name ($percent%) ======="
+            echo -e "\n${BLUE}[$percent%] Analyzing:${NC} ${GREEN}$target_name${NC} - ${GREEN}$query_name${NC}"
+            log_entry "\n\t======= Analysis of pair: $target_name - $query_name ($percent%) ======="
             
-            # Extraire les chromosomes pour chaque fichier et garder les communs
+            # Extract chromosomes for each file and keep common ones
             chrs_query=$(grep -o '^>[^ ]*' "$query_file" | sed 's/^>//' | sort | uniq)
             chrs_target=$(grep -o '^>[^ ]*' "$target_file" | sed 's/^>//' | sort | uniq)
             common_chrs=$(comm -12 <(echo "$chrs_target") <(echo "$chrs_query"))
             
-            # Vérifier s'il y a des chromosomes communs
+            # Check if there are common chromosomes
             if [ -z "$common_chrs" ]; then
-                echo -e "  ${YELLOW}⚠ Aucun chromosome commun trouvé${NC}"
-                journaliser "AVERTISSEMENT: Aucun chromosome commun entre $target_name et $query_name"
+                echo -e "  ${YELLOW}⚠ No common chromosomes found${NC}"
+                log_entry "WARNING: No common chromosomes between $target_name and $query_name"
                 continue
             fi
 
-            # Affichage de la progression pour les chromosomes
+            # Display progress for chromosomes
             num_chrs=$(echo "$common_chrs" | wc -l)
             chr_idx=0            
-            # Boucler sur les chromosomes communs
+            # Loop through common chromosomes
             for chr in $common_chrs; do
                 chr_idx=$((chr_idx + 1))
-                echo -ne "\r\033[K[${chr_idx}/${num_chrs}] Traitement ${GREEN}$chr${NC}..."
-                journaliser " --> Traitement du chromosome: $chr ($target_name - $query_name)"
+                echo -ne "\r\033[K[${chr_idx}/${num_chrs}] Processing ${GREEN}$chr${NC}..."
+                log_entry " --> Processing chromosome: $chr ($target_name - $query_name)"
                 
-                # Noms de fichiers temporaires
+                # Temporary file names
                 chr_target_file="$TMP_DIR/target.fasta"
                 chr_query_file="$TMP_DIR/query.fasta"
                 output_bam="$TMP_DIR/algnt.bam"
                 syri_out="$TMP_DIR/syri.out"
 
-                # ==================== Extraire les séquences du chromosome commun ====================
+                # ==================== Extract sequences from common chromosome ====================
                 AWK_EXTRACT="awk -v chr=\">$chr\" '
                     \$0 ~ chr\"([ \\t]|$)\" {print_flag=1} 
                     \$0 ~ \"^>\" && \$0 !~ chr\"([ \\t]|$)\" {print_flag=0} 
                     print_flag
                 ' \"$target_file\" > \"$chr_target_file\""
-                if ! executer_commande "Extraction du chromosome $chr de $target_name" "$AWK_EXTRACT"; then
+                if ! execute_command "Extracting chromosome $chr from $target_name" "$AWK_EXTRACT"; then
                     echo -e "${YELLOW}✗${NC}"
                     continue
                 fi
@@ -249,21 +251,21 @@ for ((i=0; i<${#fasta_files[@]}; i++)); do
                     \$0 ~ \"^>\" && \$0 !~ chr\"([ \\t]|$)\" {print_flag=0} 
                     print_flag
                 ' \"$query_file\" > \"$chr_query_file\""
-                if ! executer_commande "Extraction du chromosome $chr de $query_name" "$AWK_EXTRACT"; then
+                if ! execute_command "Extracting chromosome $chr from $query_name" "$AWK_EXTRACT"; then
                     echo -e "${YELLOW}✗${NC}"
                     continue
                 fi
 
-                # Vérifier que les fichiers extraits ne sont pas vides
+                # Check that extracted files are not empty
                 if [ ! -s "$chr_target_file" ] || [ ! -s "$chr_query_file" ]; then
-                    echo -e "${YELLOW}✗${NC} (fichier vide)"
-                    journaliser "AVERTISSEMENT: Fichier d'extraction vide pour le chromosome $chr"
+                    echo -e "${YELLOW}✗${NC} (empty file)"
+                    log_entry "WARNING: Empty extraction file for chromosome $chr"
                     continue
                 fi
                 # =====================================================================================
 
 
-                # ========= Exécuter minimap2 pour mapper les chr et filtrer les résultats =============
+                # ========= Run minimap2 to map chromosomes and filter results =============
                 MINIMAP_CMD="minimap2 -ax asm5 -t $THREADS --cs --eqx \"$chr_target_file\" \"$chr_query_file\" 2>/dev/null | 
                 samtools view -h | 
                 awk -v min_identity=\"$MIN_IDENTITY\" 'BEGIN {OFS=\"\\t\"} 
@@ -288,30 +290,30 @@ for ((i=0; i<${#fasta_files[@]}; i++)); do
                     }' | 
                 samtools sort -O BAM -o \"$output_bam\"  && 
                 samtools index \"$output_bam\""
-                if ! executer_commande "Alignement des $chr avec minimap2" "$MINIMAP_CMD"; then
+                if ! execute_command "Aligning $chr with minimap2" "$MINIMAP_CMD"; then
                     echo -e "${YELLOW}✗${NC}"
                     continue
                 fi
                 # =====================================================================================
 
 
-                # ========== Exécuter syri pour la détection des variants structuraux =================
+                # ========== Run syri for structural variant detection =================
                 SYRI_CMD="syri -c \"$output_bam\" -r \"$chr_target_file\" -q \"$chr_query_file\" -F B --dir \"$TMP_DIR\" --nc $THREADS > /dev/null 2>&1"
-                if ! executer_commande "Détection des variants structuraux avec SyRI" "$SYRI_CMD" true; then
+                if ! execute_command "Detecting structural variants with SyRI" "$SYRI_CMD" true; then
                     echo -e "${YELLOW}✗${NC}"
-                    echo "Erreur pour $target_name - $query_name : $chr" >> "$LOG_FILE"
+                    echo "Error for $target_name - $query_name : $chr" >> "$LOG_FILE"
                     continue
                 fi
-                # Vérifier si le fichier de sortie de SyRI existe
+                # Check if SyRI output file exists
                 if [ ! -f "$syri_out" ]; then
-                    echo -e "${YELLOW}✗${NC} (fichier manquant)"
-                    echo "Fichier de sortie SyRI manquant pour $target_name - $query_name : $chr" >> "$LOG_FILE"
+                    echo -e "${YELLOW}✗${NC} (missing file)"
+                    echo "Missing SyRI output file for $target_name - $query_name : $chr" >> "$LOG_FILE"
                     continue
                 fi
                 # =====================================================================================
 
 
-                # ==================== Extraction et formatage des inversions ===========================
+                # ==================== Extraction and formatting of inversions ===========================
                 AWK_EXTRACT="awk -F'\\t' -v OFS='\\t' -v tgt_name=\"$target_name\" -v qry_name=\"$query_name\" '
                 (\$9 ~ /INV/) {
                     tstart = (\$2 < \$3) ? \$2 : \$3;
@@ -319,15 +321,12 @@ for ((i=0; i<${#fasta_files[@]}; i++)); do
                     qstart = (\$7 < \$8) ? \$7 : \$8;
                     qend = (\$7 > \$8) ? \$7 : \$8;
                     pair = tstart \"-\" tend \"-\" qstart \"-\" qend;
-                    sep = \"-\"
                     if (!(pair in seen)) {
                         seen[pair] = 1;
-                        tgt_size = tend - tstart;
-                        qry_size = qend - qstart;
-                        print tgt_name, \$1, tstart, tend, tgt_size, sep, qry_name, \$6, qstart, qend, qry_size
+                        print tgt_name, \$1, tstart, tend, qry_name, \$6, qstart, qend
                     }
                 }' \"$syri_out\" >> \"$OUTFILE\""
-                if ! executer_commande "Extraction des inversions pour $chr" "$AWK_EXTRACT" true; then
+                if ! execute_command "Extracting inversions for $chr" "$AWK_EXTRACT" true; then
                     echo -e "${YELLOW}✗${NC}"
                     continue
                 fi
@@ -340,6 +339,6 @@ done
 
 rm -r $TMP_DIR
 
-journaliser "Analyse terminée. Résultats disponibles dans '$OUTFILE'"
-echo -e "\n\n${BLUE}Analyse terminée.${NC}\nRésultats disponibles dans : ${GREEN}'$OUTFILE'${NC}"
+log_entry "Analysis completed. Results available in '$OUTFILE'"
+echo -e "\n\n${BLUE}Analysis completed.${NC}\nResults available in: ${GREEN}'$OUTFILE'${NC}"
 exit 0

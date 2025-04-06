@@ -258,16 +258,19 @@ def generate_multi_genome_html(genome_data):
     
     return html_content
 
-def main(input_directory,output_file):
+def main(input_files,output_file):
     # Get all TSV files in the directory
-    tsv_files = list(Path(input_directory).glob('*.tsv'))
+    tsv_files = list([Path(file.strip()) for file in input_files.split()])
     
     # Process each TSV file and store the data
     genome_data = {}
     for tsv_file in tsv_files:
+        
         # Extract genome name from filename (assuming format: NAME_*.tsv)
+        # ==================================SPECIFIQUE A NOS DONNEES =============================
         genome_name = tsv_file.name.split('_')[0]+'_'+tsv_file.name.split('_')[1]
-
+        # ========================================================================================
+        
         genome_data[genome_name] = parse_tsv_file(tsv_file)
     
     # Generate HTML with all genome data
@@ -280,11 +283,11 @@ def main(input_directory,output_file):
 if __name__ == "__main__":
     # Gestion des arguments en ligne de commande
     if len(sys.argv) != 5:
-        print("Usage: python script.py --input_directory <dossier> --output_file <fichier_html>")
+        print("Usage: python script.py --input_files <dossier> --output_file <fichier_html>")
         sys.exit(1)
 
-    input_directory = sys.argv[2]  # Dossier d'entrée
+    input_files = sys.argv[2]  # Dossier d'entrée
     output_file = sys.argv[4]  # Fichier de sortie HTML
 
-    main(input_directory, output_file)
+    main(input_files, output_file)
 

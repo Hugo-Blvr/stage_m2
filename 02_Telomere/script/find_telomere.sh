@@ -11,22 +11,22 @@ BLUE='\033[0;34m'; NC='\033[0m'
 
 help() {
     echo
-    echo -e "${BLUE}Usage:${NC} $0 -d <dossier> -m <motif> [options]\n"
-    echo -e "${BLUE}Options obligatoires:${NC}"
-    echo "  -d, --dossier <dossier>  Chemin vers le dossier contenant les fichiers FASTA (.fasta ou .fa)"
-    echo "  -m, --motif <motif>      Motif ADN à rechercher"
-    echo -e "${BLUE}Options facultatives:${NC}"
-    echo "  -h, --help               Affiche ce message d'aide"
-    echo "  -o, --output <dossier>   Spécifie le dossier de sortie (par défaut: ./out_telomere_region)"
-    echo "  -v, --visu <visu_file>   Nom du fichier de sortie pour la visualisation"
-    echo -e "\n${YELLOW}IMPORTANT: ${NC}Le script python 'visu_telo.py' doit être prèsent dans le même dossier que $0"
-    echo -e " si l'option -v/--visu est utilisée.\n"
+    echo -e "${BLUE}Usage:${NC} $0 -d <directory> -m <motif> [options]\n"
+    echo -e "${BLUE}Required options:${NC}"
+    echo "  -d, --directory <directory>  Path to the directory containing FASTA files (.fasta or .fa)"
+    echo "  -m, --motif <motif>          DNA motif to search for"
+    echo -e "${BLUE}Optional options:${NC}"
+    echo "  -h, --help                   Display this help message"
+    echo "  -o, --output <directory>     Specify the output directory (default: ./out_telomere_region)"
+    echo "  -v, --visu <visu_file>       Output filename for visualization"
+    echo -e "\n${YELLOW}IMPORTANT: ${NC}The Python script 'visu_telo.py' must be present in the same directory as $0"
+    echo -e " if the -v/--visu option is used.\n"
     exit 0
 }
 
-verifier_prerequis() {
+check_prerequisites() {
     local tools=(tidk find)
-    [[ -n "$VISU_FILE_NAME" ]] && tools+=(python)  # Ajout de python si VISU_FILE_NAME est défini
+    [[ -n "$VISU_FILE_NAME" ]] && tools+=(python)  # Add python if VISU_FILE_NAME is defined
 
     local missing_tools=()
     for tool in "${tools[@]}"; do
@@ -34,80 +34,79 @@ verifier_prerequis() {
     done
 
     if ((${#missing_tools[@]})); then
-        echo -e "\n${RED}Erreur: Les outils suivants ne sont pas installés ou ne sont pas dans le PATH:${NC}"
+        echo -e "\n${RED}Error: The following tools are not installed or not in PATH:${NC}"
         printf "${RED}  - %s\n${NC}" "${missing_tools[@]}"
-        echo -e "Veuillez installer ces outils avant d'exécuter ce script.\n"
+        echo -e "Please install these tools before running this script.\n"
         exit 1
     fi
 }
 
-verifier_dossier() {
-    local dossier="$1"
+check_directory() {
+    local directory="$1"
     local description="$2"
-    # Vérification de l'existence et de la lisibilité du dossier
-    if [ ! -d "$dossier" ] || [ ! -r "$dossier" ]; then
-        echo -e "${RED}Erreur: Le dossier $description '$dossier' n'existe pas ou n'est pas lisible.${NC}"
-        journaliser "ERREUR: Dossier '$dossier' introuvable ou non lisible"
+    # Check existence and readability of the directory
+    if [ ! -d "$directory" ] || [ ! -r "$directory" ]; then
+        echo -e "${RED}Error: The $description directory '$directory' does not exist or is not readable.${NC}"
+        log_entry "ERROR: Directory '$directory' not found or not readable"
         exit 1
     fi
 }
 
-creer_dossier() {
-    local dossier="$1"
-    # Si le dossier n'existe pas, tente de le créer
-    if [ ! -d "$dossier" ]; then
-        journaliser "Création du dossier '$dossier'"
-        mkdir -p "$dossier" || { 
-            echo -e "${RED}Erreur: Impossible de créer le dossier '$dossier'.${NC}"
-            journaliser "ERREUR: Création du dossier '$dossier' échouée"
+create_directory() {
+    local directory="$1"
+    # If the directory doesn't exist, try to create it
+    if [ ! -d "$directory" ]; then
+        log_entry "Creating directory '$directory'"
+        mkdir -p "$directory" || { 
+            echo -e "${RED}Error: Unable to create directory '$directory'.${NC}"
+            log_entry "ERROR: Failed to create directory '$directory'"
             exit 1
         }
     fi
-    # Vérifie que le dossier est accessible en écriture
-    if [ ! -w "$dossier" ]; then
-        echo -e "${RED}Erreur: Le dossier '$dossier' n'est pas accessible en écriture.${NC}"
-        journaliser "ERREUR: Dossier '$dossier' non accessible en écriture"
+    # Check that the directory is writable
+    if [ ! -w "$directory" ]; then
+        echo -e "${RED}Error: The directory '$directory' is not writable.${NC}"
+        log_entry "ERROR: Directory '$directory' not writable"
         exit 1
     fi
 }
 
-journaliser() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
+log_entry() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
 
-executer_commande() {
+execute_command() {
     local description="$1"           
-    local commande="$2"              
-    local ignore_error="${3:-false}" # Un flag qui indique si les erreurs doivent être ignorées (par défaut "false")
+    local command="$2"              
+    local ignore_error="${3:-false}" # Flag indicating if errors should be ignored (default "false")
     
-    echo -e "${BLUE}$description...${NC}"
-    journaliser "EXÉCUTION: $description" 
+    log_entry "EXECUTION: $description" 
     
-    OUTPUT=$(eval "$commande" 2>&1) # Exécution de la commande dans un sous-shell et récupération de la sortie
-    local STATUS=$?  # Récupération du code de retour de la commande
+    OUTPUT=$(eval "$command" 2>&1) # Execute the command in a subshell and capture output
+    local STATUS=$?  # Capture the return code of the command
     
     if [ $STATUS -eq 0 ] || [ "$ignore_error" == "true" ]; then
-        return 0  # si la commande s'est exécutée avec succès ou si on ignore les erreurs
+        return 0  # if the command executed successfully or if we're ignoring errors
     else
-        # Si une erreur s'est produite, afficher un message d'erreur et journaliser
-        echo -e "  ${RED}✗${NC} Erreur lors de $description"
-        journaliser "ERREUR: $description: $OUTPUT"
+        # If an error occurred, display an error message and log it
+        echo -e "  ${RED}✗${NC} Error during $description"
+        log_entry "ERROR: $description: $OUTPUT"
         return 1
     fi
 }
 
-# Initialisation des variables par défaut
+# Initialize default variables
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 INDIR=""
 MOTIF=""
 OUTDIR="./out_telomere_region"
 VISU_FILE_NAME=""
 
-# Traitement des options
+# Process options
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -h|--help)
             help
             ;;
-        -d|--dossier)
+        -d|--directory)
             INDIR="$2"
             shift 2
             ;;
@@ -124,131 +123,124 @@ while [[ "$#" -gt 0 ]]; do
             shift 2
             ;;
         *)
-            echo -e "${RED}Erreur: Option inconnue '$1'${NC}"
-            echo "Utilisez '$0 --help' pour voir les options disponibles."
+            echo -e "${RED}Error: Unknown option '$1'${NC}"
+            echo "Use '$0 --help' to see available options."
             exit 1
             ;;
     esac
 done
 
-# =========== Validation des paramètre et préparation de l’environnement de sortie ========
+# =========== Parameter validation and preparation of the output environment ========
 if [ -z "$INDIR" ] || [ -z "$MOTIF" ]; then
-    echo -e "${RED}Erreur: Les options -d/--dossier et -m/--motif sont obligatoires.${NC}"
-    echo "Utilisez '$0 --help' pour plus d'informations."
+    echo -e "${RED}Error: The options -d/--directory and -m/--motif are required.${NC}"
+    echo "Use '$0 --help' for more information."
     exit 1
 fi
 
-verifier_prerequis
+check_prerequisites
 LOG_FILE="$OUTDIR/telo_search.log"
 [ -f "$LOG_FILE" ] && rm "$LOG_FILE"
 
-verifier_dossier "$INDIR" "d'entrée"
+check_directory "$INDIR" "input"
 INDIR=$(realpath "$INDIR")
 
-OUTDIR=$(realpath "$OUTDIR")
-creer_dossier "$OUTDIR"
-
 MOTIF_TRIPLE="${MOTIF}${MOTIF}${MOTIF}"
-
-# Vérifie l'existence du script Python si la visualisation est demandée + vérifie l'extention de la visualisation
+GENERATED_FILES=()
+# Check the existence of the Python script if visualization is requested + check the visualization extension
 PYTHON_SCRIPT="$SCRIPT_DIR/visu_telo.py"
 if [ -n "$VISU_FILE_NAME" ]; then
     if [ ! -f "$PYTHON_SCRIPT" ]; then
-        echo -e "${RED}Erreur: Le script Python '$PYTHON_SCRIPT' n'existe pas.${NC}"
-        echo "Ce script est nécessaire pour l'option de visualisation."
-        journaliser "ERREUR: Script Python '$PYTHON_SCRIPT' introuvable"
+        echo -e "${RED}Error: The Python script '$PYTHON_SCRIPT' does not exist.${NC}"
+        echo "This script is necessary for the visualization option."
+        log_entry "ERROR: Python script '$PYTHON_SCRIPT' not found"
         exit 1
     fi
     if [ ! -r "$PYTHON_SCRIPT" ]; then
-        echo -e "${RED}Erreur: Le script Python '$PYTHON_SCRIPT' n'est pas lisible.${NC}"
-        journaliser "ERREUR: Script Python '$PYTHON_SCRIPT' non lisible"
+        echo -e "${RED}Error: The Python script '$PYTHON_SCRIPT' is not readable.${NC}"
+        log_entry "ERROR: Python script '$PYTHON_SCRIPT' not readable"
         exit 1
     fi
 
     if [[ "$VISU_FILE_NAME" != *.html ]]; then
         VISU_FILE_NAME="${VISU_FILE_NAME}.html"
     fi
-
-    if ls "$OUTDIR"/*.tsv 1> /dev/null 2>&1; then
-        echo -e "${RED}ERREUR : Des fichiers .tsv existent dans $OUTDIR.${NC}"
-        journaliser "ERREUR : Des fichiers .tsv existent dans $OUTDIR."
-        echo "Veuillez les supprimer ou choisir un autre dossier pour ne pas compromettre la visualisation."
-        exit 1
-    fi
 fi
+
+OUTDIR=$(realpath "$OUTDIR")
+create_directory "$OUTDIR"
 # ======================================================================================
 
 
 
-# ===== Récupération et vérification de la liste des fichiers FASTA dans le dossier =====
+# ===== Retrieve and check the list of FASTA files in the directory =====
 fasta_files=($(find "$INDIR" -maxdepth 1 -type f -iname "*.fasta"))
 if [ ${#fasta_files[@]} -eq 0 ]; then
-    echo -e "${RED}Erreur: Aucun fichier .fasta trouvé dans le dossier $INDIR.${NC}"
-    journaliser "ERREUR: Aucun fichier .fasta trouvé dans le dossier $INDIR"
+    echo -e "${RED}Error: No .fasta files found in directory $INDIR.${NC}"
+    log_entry "ERROR: No .fasta files found in directory $INDIR"
     exit 1
 fi
 # ======================================================================================
 
-# Affiche un résumé des opérations à effectuer
-echo -e "${BLUE}=== Résumé des opérations ===${NC}"
-echo -e "Dossier d'entrée:    ${GREEN}$INDIR${NC}"
-echo -e "Dossier de sortie:   ${GREEN}$OUTDIR${NC}"
-echo -e "Motif rechercher:    ${GREEN}$MOTIF${NC}"
-echo -e "Fichiers FASTA:      ${GREEN}${#fasta_files[@]}${NC}"
+# Display a summary of operations to perform
+echo -e "${BLUE}=== Operations Summary ===${NC}"
+echo -e "Input directory:    ${GREEN}$INDIR${NC}"
+echo -e "Output directory:   ${GREEN}$OUTDIR${NC}"
+echo -e "Search motif:       ${GREEN}$MOTIF${NC}"
+echo -e "FASTA files:        ${GREEN}${#fasta_files[@]}${NC}"
 if [ -n "$VISU_FILE_NAME" ]; then
-    echo -e "Fichier html:        ${GREEN}$VISU_FILE_NAME${NC}\n"
+    echo -e "HTML file:          ${GREEN}$VISU_FILE_NAME${NC}\n"
 else
     echo
 fi
 
 
-# Initialise le compteur
-FICHIERS_TRAITES=0
-
-# Boucle sur chaque fichier FASTA
-echo -e "${BLUE}Démarrage du traitement des fichiers...${NC}"
-
+FILES_PROCESSED=0
+# Loop through each FASTA file
+echo -e "${BLUE}Starting telomere search${NC}"
 for FASTA_FILE in "${fasta_files[@]}"; do
-    echo
-    FILENAME=$(basename "$FASTA_FILE" | cut -d. -f1)  # Récupère le nom du fichier
-    echo -e "${NC}Traitement du fichier: ${GREEN}$FILENAME${NC} (${YELLOW}$((++FICHIERS_TRAITES))/${#fasta_files[@]}${NC})"
-    journaliser "Traitement de '$FILENAME'"
+    FILENAME=$(basename "$FASTA_FILE" | cut -d. -f1)  # Get the filename
+    echo -e "${NC}\tProcessing file: ${GREEN}$FILENAME${NC} (${YELLOW}$((++FILES_PROCESSED))/${#fasta_files[@]}${NC})"
 
-    # Vérifie que le fichier est lisible
+    # Check that the file is readable
     if [ ! -r "$FASTA_FILE" ]; then
-        echo -e "${RED}Avertissement: Le fichier '$FASTA_FILE' n'est pas lisible. Ignoré.${NC}"
-        journaliser "ERREUR: Fichier non lisible: '$FASTA_FILE'"
+        echo -e "${RED}Warning: The file '$FASTA_FILE' is not readable. Skipped.${NC}"
+        log_entry "ERROR: File not readable: '$FASTA_FILE'"
         continue
     fi
-    # Vérifie que le fichier n'est pas vide
+    # Check that the file is not empty
     if [ ! -s "$FASTA_FILE" ]; then
-        echo -e "${YELLOW}Avertissement: Le fichier '$FASTA_FILE' est vide. Ignoré.${NC}"
-        journaliser "AVERTISSEMENT: Fichier vide: '$FASTA_FILE'"
+        echo -e "${YELLOW}Warning: The file '$FASTA_FILE' is empty. Skipped.${NC}"
+        log_entry "WARNING: Empty file: '$FASTA_FILE'"
         continue
     fi
 
-    # Exécute la commande tidk search avec le motif triplé
+    # Execute the tidk search command with the tripled motif
     TIDK_CMD="tidk search -s \"$MOTIF_TRIPLE\" -o \"${FILENAME}_${MOTIF}\" -d \"$OUTDIR\" \"$FASTA_FILE\""
-    if executer_commande "Analyse TIDK de '$FILENAME'" "$TIDK_CMD" true; then
-        RESULT_FILE="$OUTDIR/${FILENAME}_${MOTIF}_telomeric_repeat_windows.tsv"
+    if execute_command "TIDK analysis of '$FILENAME'" "$TIDK_CMD" true; then
+        GENERATED_TSV="${OUTDIR}/${FILENAME}_${MOTIF}_telomeric_repeat_windows.tsv"
+        GENERATED_FILES+=("$GENERATED_TSV")
     else
-        journaliser "ERREUR: Échec de l'analyse de '$FILENAME'"
+        log_entry "ERROR: Failed to analyze '$FILENAME'"
+        exit 1
     fi
 
 done
 
-journaliser "Analyse terminée. Résultats disponibles dans '$OUTDIR'"
-echo -e "\n${BLUE}Analyse terminée.${NC}\nRésultats disponibles dans : ${GREEN}'$OUTDIR'${NC}"
+log_entry "Analysis completed. Results available in '$OUTDIR'"
+echo -e "\n${BLUE}Analysis completed.${NC}\nResults available in: ${GREEN}'$OUTDIR'${NC}"
 
-# Si un fichier de visualisation est spécifié, lance le script de visualisation
+# If a visualization file is specified, run the visualization script
 if [ -n "$VISU_FILE_NAME" ]; then
     echo
-    VISU_CMD="python \"$PYTHON_SCRIPT\" --input_folder \"$OUTDIR\" --output_file \"$VISU_FILE_NAME\""
-    if ! executer_commande "Génération de la visualisation" "$VISU_CMD"; then
-        echo -e "${RED}Erreur lors de la génération de la visualisation${NC}"
+    echo -e "${BLUE}Creating visualization${NC}"
+    GENERATED_FILES="${GENERATED_FILES[*]}"
+    VISU_CMD="python \"$PYTHON_SCRIPT\" --input_files \"$GENERATED_FILES\" --output_file \"$VISU_FILE_NAME\""
+    if execute_command "Generating visualization" "$VISU_CMD"; then
+        log_entry "Visualization successfully generated in: '$VISU_FILE_NAME'"
+        echo -e "\tVisualization successfully generated in: ${GREEN}'$VISU_FILE_NAME'${NC}"
     else
-        journaliser "Visualisation générée avec succès dans: '$VISU_FILE_NAME'"
-        echo -e "Visualisation générée avec succès dans: ${GREEN}'$VISU_FILE_NAME'${NC}"
+        echo -e "${RED}\tError generating visualization${NC}"
+        exit 1
     fi
 fi
 

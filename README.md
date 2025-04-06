@@ -54,13 +54,10 @@ Le fichier de sortie est au format TSV avec les colonnes suivantes :
 2. Chromosome cible  
 3. Position de début dans le génome cible  
 4. Position de fin dans le génome cible  
-5. Taille de l'inversion dans le génome cible  
-6. Séparateur (`-`)  
-7. Nom du génome requête  
-8. Chromosome requête  
-9. Position de début dans le génome requête  
-10. Position de fin dans le génome requête  
-11. Taille de l'inversion dans le génome requête  
+5. Nom du génome requête  
+6. Chromosome requête  
+7. Position de début dans le génome requête  
+8. Position de fin dans le génome requête  
 
 ## Fonctionnement détaillé
 
