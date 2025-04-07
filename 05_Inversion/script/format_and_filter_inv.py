@@ -22,7 +22,6 @@ def format_df_myinv(df_pathfile):
     colnames = ['iso', 'chr', 'start', 'end','mapon']
     df_T.columns, df_Q.columns = colnames, colnames
     df_T['type'], df_Q['type'] = 'T', 'Q'   
-    df_T['idx'], df_Q['idx'] = df.index, df.index
 
     format_data = pd.concat([df_T, df_Q], ignore_index=True)
     format_data['size'] = format_data['end'] - format_data['start']    
@@ -31,9 +30,12 @@ def format_df_myinv(df_pathfile):
     return format_data
     
 
-def filter_inversions(df_pathfile, outfile_name, del_recover = True):
+def filter_inversions(df_pathfile, outfile_name, filter = True, del_recover = True):
+    print(filter)
+    
     df = format_df_myinv(df_pathfile)
-
+    if not filter : 
+        return df.to_csv(outfile_name, sep="\t", index=False)
     
     # Formatage et séparation des données
     df_t, df_q = df[df['type'] == 'T'].copy(), df[df['type'] == 'Q'].copy()
@@ -109,17 +111,19 @@ def filter_inversions(df_pathfile, outfile_name, del_recover = True):
     if del_recover : 
         df_filter = df_filter.groupby(['iso', 'chr', 'mapon'], group_keys=False)[df_filter.columns].apply(filter_overlapping_inversions)
     
-    df_filter = df_filter.drop(columns=['type', 'idx'])
+    df_filter = df_filter.drop(columns=['type'])
     df_filter = df_filter.sort_values(by=['iso','mapon','chr','start']).reset_index(drop=True)
     df_filter.to_csv(outfile_name, sep="\t", index=False)
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python format_inv.py <in_pathname> <out_pathname>")
+        print("Usage: python3 format_inv.py <in_pathname> <out_pathname>")
         sys.exit(1)
 
     df_pathfile = sys.argv[1]
-    filname = sys.argv[2]
+    out_filname = sys.argv[2]
+    if len(sys.argv) > 3:  filter = False
+    else: filter = True
     
-    filter_inversions(df_pathfile,filname)
+    filter_inversions(df_pathfile,out_filname, filter)
