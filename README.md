@@ -94,3 +94,4 @@ Un fichier journal (`inversions_calling.log`) est généré dans le dossier de s
 ## Limitations
 Le script traite uniquement les chromosomes portant le même identifiant entre génomes, présupposant qu'ils représentent des chromosomes homologues. De plus pour un maximum de prècision les génomes ne doivent pas dépasser les 5% de divergence. 
 
++ filter with filter_inv.py ... 
