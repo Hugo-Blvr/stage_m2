@@ -140,7 +140,7 @@ def plot_inversions(fig, ax, df, chr_length, lineage_pathfile = None):
 
     return ax, current_y_base
 
-"""
+
 
 def calculate_inversion_distribution(df, chr_length, window_size=25000):
     # Calculer le nombre de fenêtres
@@ -191,7 +191,6 @@ def plot_inversion_distribution(fig, ax, df, chr_length, window_size=25000):
     
     return ax
 
-"""
 
 def plot_genome_features(df_inversions,chr_length,output_file):
     iso = df_inversions['iso'].unique()[0]
@@ -209,11 +208,11 @@ def plot_genome_features(df_inversions,chr_length,output_file):
     ax_inv.set_xticklabels([])  # Ne pas afficher les étiquettes x pour l'axe des inversions
     
     # Tracer le barplot de distribution des inversions
-    # -------- plot_inversion_distribution(fig, ax_distrib, df_inversions, chr_length)
+    plot_inversion_distribution(fig, ax_distrib, df_inversions, chr_length)
     ax_distrib.set_xlabel(f"Position (bp)")
     ax_distrib.set_xticklabels([f"{int(t):,}" for t in ax_distrib.get_xticks()])
     
-    plt.tight_layout(rect=[0, 0, 0.85, 1])
+    plt.subplots_adjust(right=0.7, left=0.1, top=0.9, bottom=0.1)
         
     
     # Enregistrer la figure
@@ -232,13 +231,13 @@ if __name__ == "__main__":
     with open(config_yaml, 'r') as file: config = yaml.safe_load(file)
     # Parametre
     isolat = config['required']['isolat']
-    chromosome = config['required']['chr']
+    chromosome = config['required']['chromosome']
     path_inv_file = config['required']['path_inv_file']
     # Parametre facultative 
     chr_len = config['optional']['chr_len']
     lineage_file = config['optional']['lineage_file']
     # Chemin de sortie
-    path_out_plot = config['output']['path_out_plot'].format(isolat=isolat, chr=chr)
+    path_out_plot = config['output']['path_out_plot'].format(isolat=isolat, chromosome=chromosome)
 
     df_inversions = pd.read_csv(path_inv_file, sep='\t')
     if chr_len: 

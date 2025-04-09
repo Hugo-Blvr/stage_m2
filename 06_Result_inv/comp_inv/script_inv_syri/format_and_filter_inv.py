@@ -31,8 +31,6 @@ def format_df_myinv(df_pathfile):
     
 
 def filter_inversions(df_pathfile, outfile_name, filter = True, del_recover = True):
-    print(filter)
-    
     df = format_df_myinv(df_pathfile)
     if not filter : 
         return df.to_csv(outfile_name, sep="\t", index=False)
@@ -112,6 +110,7 @@ def filter_inversions(df_pathfile, outfile_name, filter = True, del_recover = Tr
         df_filter = df_filter.groupby(['iso', 'chr', 'mapon'], group_keys=False)[df_filter.columns].apply(filter_overlapping_inversions)
     
     df_filter = df_filter.drop(columns=['type'])
+    df_filter = df_filter.drop(columns=['size'])
     df_filter = df_filter.sort_values(by=['iso','mapon','chr','start']).reset_index(drop=True)
     df_filter.to_csv(outfile_name, sep="\t", index=False)
 

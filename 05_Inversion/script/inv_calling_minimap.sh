@@ -15,7 +15,7 @@ help() {
     echo "  -d, --directory <folder>   Directory containing FASTA files to analyze"
     echo -e "${BLUE}Optional options:${NC}"
     echo "  -h, --help                  Display this help message"
-    echo "  -o, --output <path_file>    Path to the output file (default: ./inv_calling.tsv)"
+    echo "  -o, --output <path_file>    Path to the output file (default: ./inv_calling_minimap.tsv)"
     echo "  -i, --identity <float>     Minimum sequence identity (0-1, default: 0)"
     echo "  -t, --threads <int>      Number of threads to use (default: 8)"    
     echo -e "\n${YELLOW}IMPORTANT: ${NC}Homologous chromosomes must have the same identifier and be on the same strand.\n"
@@ -152,7 +152,7 @@ if [ "$OUTDIR" = "." ]; then
 fi
 OUTDIR=$(realpath "$OUTDIR")
 
-LOG_FILE="$OUTDIR/inversions_calling.log"
+LOG_FILE="$OUTDIR/inv_calling_minimap.log"
 [ -f "$LOG_FILE" ] && rm "$LOG_FILE"
 
 check_directory "$INDIR" "input"
@@ -163,7 +163,7 @@ create_directory "$OUTDIR"
 OUTFILE=$(realpath "$OUTFILE")
 [ -f "$OUTFILE" ] && rm "$OUTFILE"
 
-TMP_DIR="$OUTDIR/tmp_dir_output"
+TMP_DIR="$OUTDIR/tmp_dir_minimap_output"
 create_directory "$TMP_DIR"
 [ "$(ls -A "$TMP_DIR" 2>/dev/null)" ] && rm "$TMP_DIR"/*
 # ======================================================================================
@@ -301,13 +301,13 @@ for ((i=0; i<${#fasta_files[@]}; i++)); do
                 SYRI_CMD="syri -c \"$output_bam\" -r \"$chr_target_file\" -q \"$chr_query_file\" -F B --dir \"$TMP_DIR\" --nc $THREADS > /dev/null 2>&1"
                 if ! execute_command "Detecting structural variants with SyRI" "$SYRI_CMD" true; then
                     echo -e "${YELLOW}✗${NC}"
-                    echo "Error for $target_name - $query_name : $chr" >> "$LOG_FILE"
+                    log_entry "Error for $target_name - $query_name : $chr"
                     continue
                 fi
                 # Check if SyRI output file exists
                 if [ ! -f "$syri_out" ]; then
                     echo -e "${YELLOW}✗${NC} (missing file)"
-                    echo "Missing SyRI output file for $target_name - $query_name : $chr" >> "$LOG_FILE"
+                    log_entry "Missing SyRI output file for $target_name - $query_name : $chr"
                     continue
                 fi
                 # =====================================================================================

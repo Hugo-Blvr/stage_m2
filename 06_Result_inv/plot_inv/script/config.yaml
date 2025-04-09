@@ -1,6 +1,6 @@
 required:
   isolat: 'Gd00293-aad'
-  chr: 'chr1001'
+  chromosome: 'chr1001'
   path_inv_file: '/home/hugob/stage_m2/05_Inversion/output/filter_inv.tsv'
 
 optional:
@@ -8,4 +8,4 @@ optional:
   lineage_file: ''
 
 output:
-  path_out_plot: '/home/hugob/stage_m2/06_Result_inv/plot_inv/output/{isolat}_{chr}_invplot.png'
+  path_out_plot: '/home/hugob/stage_m2/06_Result_inv/plot_inv/output/{isolat}_{chromosome}_filter_invplot.png'
