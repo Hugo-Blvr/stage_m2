@@ -239,7 +239,9 @@ if __name__ == "__main__":
     # Chemin de sortie
     path_out_plot = config['output']['path_out_plot'].format(isolat=isolat, chromosome=chromosome)
 
+    print(isolat,chromosome)
     df_inversions = pd.read_csv(path_inv_file, sep='\t')
+    print(df_inversions)
     if chr_len: 
         try : 
             pd.read_csv(chr_len, sep='\t')

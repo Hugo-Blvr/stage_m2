@@ -15,15 +15,16 @@ help() {
     echo "  -d, --directory <folder>   Directory containing FASTA files to analyze"
     echo -e "${BLUE}Optional options:${NC}"
     echo "  -h, --help                  Display this help message"
-    echo "  -o, --output <path_file>    Path to the output file (default: ./inv_calling_nucmer.tsv)"
-    echo "  -t, --threads <int>         Number of threads to use (default: 8)"    
+    echo "  -o, --output <path_file>    Path to the output file (default: ./inv_calling_minimap.tsv)"
+    echo "  -i, --identity <float>     Minimum sequence identity (0-1, default: 0)"
+    echo "  -t, --threads <int>      Number of threads to use (default: 8)"    
     echo -e "\n${YELLOW}IMPORTANT: ${NC}Homologous chromosomes must have the same identifier and be on the same strand.\n"
     exit 0
 }
 
 check_prerequisites() {
     local missing_tools=()
-    for tool in samtools awk nucmer delta-filter show-coords syri; do
+    for tool in minimap2 samtools awk syri; do
         command -v "$tool" &>/dev/null || missing_tools+=("$tool")
     done
 
@@ -89,6 +90,7 @@ execute_command() {
 
 # Initialize default variables
 OUTFILE="./inv_calling.tsv"
+MIN_IDENTITY=0
 THREADS=8
 INDIR=""
 
@@ -104,6 +106,14 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         -o|--output)
             OUTFILE="$2"
+            shift 2
+            ;;
+        -i|--identity)
+            MIN_IDENTITY="$2"
+            if ! [[ "$MIN_IDENTITY" =~ ^[0-9]*\.?[0-9]+$ ]] || (( $(echo "$MIN_IDENTITY < 0 || $MIN_IDENTITY > 1" | bc -l) )); then
+                echo -e "${RED}Error: Sequence identity must be a number between 0 and 1.${NC}"
+                exit 1
+            fi
             shift 2
             ;;
         -t|--threads)
@@ -142,7 +152,7 @@ if [ "$OUTDIR" = "." ]; then
 fi
 OUTDIR=$(realpath "$OUTDIR")
 
-LOG_FILE="$OUTDIR/inv_calling_nucmer.log"
+LOG_FILE="$OUTDIR/inv_calling_minimap_all.log"
 [ -f "$LOG_FILE" ] && rm "$LOG_FILE"
 
 check_directory "$INDIR" "input"
@@ -153,7 +163,7 @@ create_directory "$OUTDIR"
 OUTFILE=$(realpath "$OUTFILE")
 [ -f "$OUTFILE" ] && rm "$OUTFILE"
 
-TMP_DIR="$OUTDIR/tmp_dir_nucmer_output"
+TMP_DIR="$OUTDIR/tmp_dir_minimap_output"
 create_directory "$TMP_DIR"
 [ "$(ls -A "$TMP_DIR" 2>/dev/null)" ] && rm "$TMP_DIR"/*
 # ======================================================================================
@@ -173,6 +183,7 @@ fi
 echo -e "${BLUE}====== Parameters ======${NC}"
 echo -e "Input directory:            ${GREEN}$INDIR${NC}"
 echo -e "Output file:                ${GREEN}$OUTFILE${NC}"
+echo -e "Minimum sequence identity:  ${GREEN}$MIN_IDENTITY${NC}"
 echo -e "Threads:                    ${GREEN}$THREADS${NC}"
 echo -e "FASTA files:                ${GREEN}${#fasta_files[@]}${NC}\n"
 
@@ -254,12 +265,32 @@ for ((i=0; i<${#fasta_files[@]}; i++)); do
                 # =====================================================================================
 
 
-                # ========= Run Nucmer to map chromosomes and filter results =============
-                NUCMER_CMD="nucmer --maxmatch -c 500 -t \"$THREADS\" -b 500 -l 100 \"$chr_target_file\" \"$chr_query_file\" -p \"$TMP_DIR/out\" && \
-                            delta-filter -m -i 90 -l 100 \"$TMP_DIR/out.delta\" > \"$TMP_DIR/out.filtered.delta\" && \
-                            show-coords -THrd \"$TMP_DIR/out.filtered.delta\" > \"$TMP_DIR/out.filtered.coords\""
-
-                if ! execute_command "Aligning $chr with Nucmer" "$NUCMER_CMD"; then
+                # ========= Run minimap2 to map chromosomes and filter results =============
+                MINIMAP_CMD="minimap2 -ax asm5 -t $THREADS --cs --eqx \"$chr_target_file\" \"$chr_query_file\" 2>/dev/null | 
+                samtools view -h | 
+                awk -v min_identity=\"$MIN_IDENTITY\" 'BEGIN {OFS=\"\\t\"} 
+                    /^@/ {print; next} 
+                    {                        
+                        matches = mismatches = indels = 0;
+                        cigar = \$6;
+                        while (match(cigar, /([0-9]+)([=XID])/)) {
+                            val = substr(cigar, RSTART, RLENGTH-1);
+                            type = substr(cigar, RSTART+RLENGTH-1, 1);
+                            if (type == \"=\") matches += val;
+                            else if (type == \"X\") mismatches += val;
+                            else if (type == \"I\" || type == \"D\") indels += val;
+                            cigar = substr(cigar, RSTART+RLENGTH);
+                        }
+                        
+                        aligned_bases = matches + mismatches + indels;
+                        if (aligned_bases > 0) {
+                            identity = matches / aligned_bases;
+                            if (identity >= min_identity) print;
+                        }
+                    }' | 
+                samtools sort -O BAM -o \"$output_bam\"  && 
+                samtools index \"$output_bam\""
+                if ! execute_command "Aligning $chr with minimap2" "$MINIMAP_CMD"; then
                     echo -e "${YELLOW}✗${NC}"
                     continue
                 fi
@@ -267,8 +298,7 @@ for ((i=0; i<${#fasta_files[@]}; i++)); do
 
 
                 # ========== Run syri for structural variant detection =================
-                SYRI_CMD="syri -c "$TMP_DIR/out.filtered.coords" -d "$TMP_DIR/out.filtered.delta" -r "$chr_target_file" -q "$chr_query_file" --dir "$TMP_DIR" --nc $THREADS > /dev/null 2>&1"
-                
+                SYRI_CMD="syri -c \"$output_bam\" -r \"$chr_target_file\" -q \"$chr_query_file\" -F B --dir \"$TMP_DIR\" --nc $THREADS > /dev/null 2>&1"
                 if ! execute_command "Detecting structural variants with SyRI" "$SYRI_CMD" true; then
                     echo -e "${YELLOW}✗${NC}"
                     log_entry "Error for $target_name - $query_name : $chr"

@@ -37,7 +37,7 @@ def syry_inv_to_bloc(df_pathfile, outfile_name):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 pairalgn_to_multialgn.py <in_pathname> <out_pathname>")
+        print(f"Usage: python3 {sys.argv[0]} <input_file> <output_file>")
         sys.exit(1)
 
     df_pathfile = sys.argv[1]

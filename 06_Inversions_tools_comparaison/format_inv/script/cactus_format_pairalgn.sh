@@ -1,13 +1,16 @@
 #!/bin/bash
 
 # Vérification des arguments
-if [ $# -ne 2 ]; then
-    echo "Usage: $0 03_all_data_per_nt.tar.gz output.tsv"
+if [ -z "$2" ]; then
+    echo "Usage: $0 <input_file> <output_file> [gap_threshold]"
+    echo "       gap_threshold: Nombre maximum de bases d'écart tolérées (défaut: 0)"
     exit 1
 fi
 
 ARCHIVE_FILE=$1
 OUTPUT_FILE=$2
+# Paramètre pour le seuil d'écart, par défaut 0
+GAP_THRESHOLD=${3:-0}
 TEMP_DIR=$(mktemp -d)
 MERGED_TEMP=$(mktemp)
 
@@ -23,13 +26,13 @@ tar -xzf "$ARCHIVE_FILE" -C "$TEMP_DIR"
 # Créer l'en-tête dans le fichier temporaire
 echo -e "iso\tchr\tstart\tend\tmapon" > "$MERGED_TEMP"
 
-echo "Traitement des fichiers CSV..."
+echo "Traitement des fichiers CSV avec un seuil d'écart de $GAP_THRESHOLD..."
 # Trouve tous les fichiers CSV dans le répertoire temporaire et les traite
 find "$TEMP_DIR" -name "*.csv" -type f | while read csv_file; do
     echo "Traitement de $csv_file"
     
-    # Utilise AWK pour transformer les données
-    awk -F, '
+    # Utilise AWK pour transformer les données avec le seuil d'écart
+    awk -v gap="$GAP_THRESHOLD" -F, '
     NR == 1 {
         for (i=1; i<=NF; i++) {
             if ($i=="query") query_idx=i;
@@ -59,7 +62,7 @@ find "$TEMP_DIR" -name "*.csv" -type f | while read csv_file; do
                 prev = start;
                 
                 for (i=2; i<=n; i++) {
-                    if (pos[key][i] != prev + 1) {
+                    if (pos[key][i] > prev + 1 + gap) {
                         printf "%s\t%s\t%d\t%d\t%s\n", query, chr, start, prev, target;
                         start = pos[key][i];
                     }

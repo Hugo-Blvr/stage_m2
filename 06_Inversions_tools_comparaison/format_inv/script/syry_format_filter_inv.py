@@ -12,9 +12,9 @@ def format_df_myinv(df_pathfile):
 
     # ==================== PRORPRE A NOS DONNEES================================
     split_target = df['target'].str.split('_')
-    df['target'] = split_target.str[0] + split_target.str[1]
+    df['target'] = split_target.str[0] + '_' + split_target.str[1]
     split_target = df['query'].str.split('_')
-    df['query'] = split_target.str[0] + split_target.str[1]
+    df['query'] = split_target.str[0] + '_' + split_target.str[1]
     # ==========================================================================
 
     df_T = df[['target', 't_chr', 't_start', 't_end','query']].copy()
@@ -117,7 +117,7 @@ def filter_inversions(df_pathfile, outfile_name, filter = True, del_recover = Tr
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 format_inv.py <in_pathname> <out_pathname>")
+        print(f"Usage: python3 {sys.argv[0]} <input_file> <output_file>")
         sys.exit(1)
 
     df_pathfile = sys.argv[1]
