@@ -47,7 +47,7 @@ BEGIN {
                         }
                         
                         if (chr_name == chr_key) {
-                            end = start + size;
+                            end = start + size -1;
                             print iso "\t" chr_name "\t" start "\t" end;
                         }
                     }
@@ -109,7 +109,7 @@ END {
                         }
                         
                         if (chr_name == chr_key) {
-                            end = start + size;
+                            end = start + size - 1;
                             print iso "\t" chr_name "\t" start "\t" end;
                         }
                     }
@@ -155,5 +155,14 @@ END {
 }
 ' "$temp_file" >> "$output_file"
 
-# Supprimer le fichier temporaire
+# Supprime le fichier temporaire
 rm "$temp_file"
+
+# filtre les inversion de - de 100pb
+temp_file=$(mktemp)
+awk '
+BEGIN {FS = OFS = "\t";}
+NR == 1 || ($4 - $3) >= 100 {print;}
+' "$output_file" > "$temp_file"
+# Remplacez le fichier de sortie par la version filtrée
+mv "$temp_file" "$output_file"

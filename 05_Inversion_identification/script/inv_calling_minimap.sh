@@ -152,7 +152,7 @@ if [ "$OUTDIR" = "." ]; then
 fi
 OUTDIR=$(realpath "$OUTDIR")
 
-LOG_FILE="$OUTDIR/inv_calling_minimap_all.log"
+LOG_FILE="$OUTDIR/inv_calling_minimap.log"
 [ -f "$LOG_FILE" ] && rm "$LOG_FILE"
 
 check_directory "$INDIR" "input"

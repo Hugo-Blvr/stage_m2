@@ -142,7 +142,7 @@ if [ "$OUTDIR" = "." ]; then
 fi
 OUTDIR=$(realpath "$OUTDIR")
 
-LOG_FILE="$OUTDIR/inv_calling_nucmer_all.log"
+LOG_FILE="$OUTDIR/inv_calling_nucmer.log"
 [ -f "$LOG_FILE" ] && rm "$LOG_FILE"
 
 check_directory "$INDIR" "input"
@@ -255,7 +255,7 @@ for ((i=0; i<${#fasta_files[@]}; i++)); do
 
 
                 # ========= Run Nucmer to map chromosomes and filter results =============
-                NUCMER_CMD="nucmer --maxmatch -c 500 -t \"$THREADS\" -b 500 -l 100 \"$chr_target_file\" \"$chr_query_file\" -p \"$TMP_DIR/out\" && \
+                NUCMER_CMD="nucmer -c 500 -t \"$THREADS\" -b 200 -l 100 \"$chr_target_file\" \"$chr_query_file\" -p \"$TMP_DIR/out\" && \
                             delta-filter -m -i 90 -l 100 \"$TMP_DIR/out.delta\" > \"$TMP_DIR/out.filtered.delta\" && \
                             show-coords -THrd \"$TMP_DIR/out.filtered.delta\" > \"$TMP_DIR/out.filtered.coords\""
 

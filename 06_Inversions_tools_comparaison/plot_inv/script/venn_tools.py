@@ -76,8 +76,7 @@ def venn_4(labels, region_data, title, ax):
                     ha='center', va='center', 
                     fontsize=8, weight='bold',
                     bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', pad=1.5))
-        else:
-            print(f"Avertissement: La région {region} n'a pas de coordonnées définies.")
+        else:print(f"Avertissement: La région {region} n'a pas de coordonnées définies.")
 
     # Configuration des axes
     ax.set_xlim(0, 1)
