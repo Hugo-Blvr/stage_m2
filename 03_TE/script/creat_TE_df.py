@@ -11,23 +11,6 @@ from pathlib import Path
 import pandas as pd
 import warnings
 
-# Supprimer les avertissements de pandas pour le parseur
-warnings.simplefilter(action='ignore', category=pd.errors.ParserWarning)
-
-def process_chromosome_name(chrom_name):
-    """
-    Traite les noms de chromosomes selon une règle spécifique.
-    Args:
-        chrom_name (str): Nom du chromosome à traiter (ex: 'chr3')
-    Returns:
-        str: Nom du chromosome transformé
-    """
-    try:
-        chrom_num = int(chrom_name.replace('chr', ''))
-        if chrom_num in [3, 16, 17]: return f'chr{chrom_num + 2000}'
-        else: return f'chr{chrom_num + 1000}'
-    except ValueError: return chrom_name
-
 
 def create_df_all_TE(directory_path, outfile_path, verbose=False):
     """
@@ -41,12 +24,8 @@ def create_df_all_TE(directory_path, outfile_path, verbose=False):
     """
     all_dfs = []
     file_count = 0
-    
-    # Vérifier que le répertoire existe
-    if not os.path.isdir(directory_path):
-        print(f"ERROR: Le répertoire '{directory_path}' n'existe pas", file=sys.stderr)
-        return False
-    
+
+
     # Créer le répertoire de sortie s'il n'existe pas
     outfile_dir = os.path.dirname(outfile_path)
     if outfile_dir and not os.path.exists(outfile_dir):
@@ -68,9 +47,9 @@ def create_df_all_TE(directory_path, outfile_path, verbose=False):
     for file_path in out_files:
         try:
             if verbose: print(f"Traitement du fichier: {file_path.name}")   
-            df = pd.read_csv(file_path, sep=r'\s+', engine='python', header=None, 
-                          index_col=False, skip_blank_lines=True, skiprows=2)
-            
+            df = pd.read_csv(file_path, sep='\t', 
+                          index_col=False)
+                        
             # Vérifier que le fichier contient des données
             if df.empty:
                 print(f"Attention: Le fichier {file_path.name} est vide ou mal formaté", file=sys.stderr)
@@ -82,7 +61,6 @@ def create_df_all_TE(directory_path, outfile_path, verbose=False):
             
             # Reformater le DataFrame
             df['iso'] = file_path.stem 
-            df['sequence'] = df['sequence'].apply(process_chromosome_name)
             df = df[['iso', 'sequence', 'begin', 'end', 'class/family', 'ID', 'div.']]
             df.columns = ['iso', 'chr', 'start', 'end', 'class', 'oid', 'div']
             
@@ -104,8 +82,8 @@ def create_df_all_TE(directory_path, outfile_path, verbose=False):
         
         # Filtrer et regrouper les classes d'éléments transposables
         df = df[(df['class'] != 'Low_complexity') & (df['class'] != 'Simple_repeat')]
-        df['class'] = df['class'].replace(['Simple_repeat', 'Low_complexity', 'ClassI/Unclassified', 'RC/Helitron'], 'Others')
-        df['class'] = df['class'].replace({r'^LTR.*$': 'LTR', r'^DNA.*$': 'DNA', r'^LINE.*$': 'LINE'}, regex=True)
+        #df['class'] = df['class'].replace(['Simple_repeat', 'Low_complexity', 'ClassI/Unclassified', 'RC/Helitron'], 'Others')
+        #df['class'] = df['class'].replace({r'^LTR.*$': 'LTR', r'^DNA.*$': 'DNA', r'^LINE.*$': 'LINE'}, regex=True)
 
         # Exporter le DataFrame filtré dans un fichier TSV
         df = df.sort_values(by=['iso', 'chr', 'start'])
